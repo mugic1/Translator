@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Text Translator</title>
+  <style>
+    /* --- CSS Variables for easy theming --- */
+    :root {
+      --primary-color: #3498db;
+      --primary-color-dark: #2980b9;
+      --secondary-color: #2ecc71;
+      --secondary-color-dark: #27ae60;
+      --background-light: #f8f9fa;
+      --background-white: #ffffff;
+      --text-dark: #34495e;
+      --text-light: #7f8c8d;
+      --border-color: #e0e0e0;
+      --error-color: #e74c3c;
+      --warning-color: #f39c12;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      --transition-speed: 0.3s;
+    }
+
+    /* --- Base Styles & Typography --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      background-color: var(--background-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      padding: 20px; /* Add padding around the body for smaller screens */
+    }
+
+    .container {
+      max-width: 850px;
+      margin: 20px auto; /* Add margin top/bottom */
+      background-color: var(--background-white);
+      padding: 30px; /* Increased padding */
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--text-dark);
+      margin-bottom: 30px; /* Increased margin */
+      font-weight: 600;
+    }
+
+    /* --- Language Tabs --- */
+    .language-tabs {
+      display: flex;
+      margin-bottom: 25px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      color: var(--text-light);
+      font-weight: 500;
+      transition: all var(--transition-speed) ease;
+      margin-right: 10px; /* Spacing between tabs */
+      position: relative; /* For the active indicator */
+      top: 2px; /* Align bottom border with container border */
+    }
+
+    .tab:hover {
+      color: var(--text-dark);
+    }
+
+    .tab.active {
+      border-bottom-color: var(--primary-color);
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+
+    /* --- Text Areas & Output Box --- */
+    textarea,
+    .output-box {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      line-height: 1.5;
+      background-color: var(--background-light);
+      transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+      color: var(--text-dark);
+    }
+
+    textarea {
+      min-height: 180px; /* Changed fixed height to min-height */
+      resize: vertical;
+      margin-bottom: 10px;
+    }
+
+    textarea:focus,
+    .output-box:focus-within { /* Style when focused or contains focus */
+        border-color: var(--primary-color);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); /* Subtle focus ring */
+    }
+
+    .output-container {
+      position: relative;
+      margin-top: 25px; /* Space above output */
+    }
+
+    .output-box {
+      min-height: 180px;
+      background-color: var(--background-light); /* Match textarea bg */
+      white-space: pre-wrap; /* Preserve line breaks */
+    }
+
+    /* --- Buttons --- */
+    .button-group {
+      display: flex;
+      gap: 15px; /* Increased gap */
+      margin-top: 20px; /* Added margin top */
+      margin-bottom: 20px;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: var(--background-white);
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      flex: 1; /* Default: buttons share space */
+      transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
+      text-align: center;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: var(--primary-color-dark);
+      transform: translateY(-2px); /* Slight lift on hover */
+    }
+
+    button:active:not(:disabled) {
+        transform: translateY(0); /* Press down effect */
+    }
+
+    button:disabled {
+      background-color: #bdc3c7;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    #copyBtn {
+      background-color: var(--secondary-color);
+      flex-grow: 0.5; /* Make copy button slightly smaller */
+    }
+     #copyBtn:hover:not(:disabled) {
+      background-color: var(--secondary-color-dark);
+    }
+
+    #copyBtn.copied {
+      background-color: var(--secondary-color-dark); /* Use darker green when copied */
+      animation: pulse 0.6s ease-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    /* --- Progress Bar --- */
+    .progress-container {
+      margin: 20px 0; /* Consistent vertical margin */
+      height: 8px; /* Slightly thicker */
+      background-color: #ecf0f1;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background-color: var(--primary-color);
+      width: 0%;
+      transition: width 0.4s ease-in-out; /* Smoother transition */
+      border-radius: var(--border-radius); /* Rounded inner bar */
+    }
+
+    /* --- Stats & Error --- */
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      color: var(--text-light);
+      font-size: 14px;
+      padding: 0 5px; /* Small horizontal padding */
+    }
+
+    .error {
+      color: var(--error-color);
+      margin-top: 15px;
+      font-weight: 500;
+      min-height: 1.6em; /* Reserve space to prevent layout shifts */
+      text-align: center; /* Center error message */
+    }
+    .error:not(:empty) { /* Add padding only when there's content */
+        padding: 10px;
+        background-color: #fdecea; /* Light red background for errors */
+        border: 1px solid var(--error-color);
+        border-radius: var(--border-radius);
+    }
+    /* Style for non-error messages (like chunk failures) */
+    .error[style*="color: rgb(243, 156, 18)"] { /* Target the warning color */
+         background-color: #fef5e7; /* Light yellow background */
+         border: 1px solid var(--warning-color);
+         color: var(--warning-color);
+    }
+
+
+    /* --- Responsive Design (Mobile First Adjustments) --- */
+
+    /* Styles for screens smaller than 600px */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px; /* Reduce body padding */
+      }
+
+      .container {
+        padding: 20px; /* Reduce container padding */
+      }
+
+      h1 {
+        font-size: 1.8em; /* Slightly smaller heading */
+        margin-bottom: 20px;
+      }
+
+      .language-tabs {
+          margin-bottom: 20px;
+      }
+
+      .tab {
+          padding: 10px 15px; /* Smaller tab padding */
+          font-size: 15px;
+      }
+
+      textarea, .output-box {
+        font-size: 15px;
+        min-height: 150px; /* Adjust height for smaller screens */
+      }
+
+      .button-group {
+        flex-direction: column; /* Stack buttons vertically */
+        gap: 10px;
+      }
+
+       button {
+          padding: 14px 20px; /* Slightly taller buttons when stacked */
+       }
+
+      #copyBtn {
+          flex-grow: 1; /* Let copy button take full width when stacked */
+      }
+
+      .stats {
+        font-size: 13px;
+      }
+    }
+
+     /* Styles for screens smaller than 400px */
+     @media (max-width: 400px) {
+         h1 {
+             font-size: 1.6em;
+         }
+         .tab {
+            padding: 8px 10px;
+            margin-right: 5px;
+         }
+     }
+
+  </style>
+</head>
+<body>
+  <!-- The rest of your HTML (container, inputs, buttons etc.) remains exactly the same -->
+  <div class="container">
+    <h1>Complete Text Translator</h1>
+
+    <div class="language-tabs">
+      <div class="tab active" id="enToHiTab">English → Hindi</div>
+      <div class="tab" id="hiToEnTab">Hindi → English</div>
+    </div>
+
+    <textarea id="inputText" placeholder="Enter your text here..."></textarea>
+
+    <div class="stats">
+      <span id="inputStats">0 characters</span>
+      <span id="chunkStats">0 chunks</span>
+    </div>
+
+    <div class="button-group">
+      <button id="translateBtn">Translate</button>
+      <button id="copyBtn" disabled>Copy</button> <!-- Start disabled -->
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="output-container">
+      <div id="outputText" class="output-box">Your complete translation will appear here...</div>
+    </div>
+
+    <div class="stats">
+      <span id="outputStats">0 characters</span>
+      <span id="timeStats">0s</span>
+    </div>
+
+    <div id="errorMsg" class="error"></div>
+  </div>
+
+  <script>
+    // Configuration
+    const MAX_CHUNK_SIZE = 1500;
+    const DELAY_BETWEEN_CHUNKS = 1000;
+    const MAX_RETRIES = 3;
+
+    // DOM Elements
+    const inputText = document.getElementById('inputText');
+    const outputText = document.getElementById('outputText');
+    const translateBtn = document.getElementById('translateBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const enToHiTab = document.getElementById('enToHiTab');
+    const hiToEnTab = document.getElementById('hiToEnTab');
+    const progressBar = document.getElementById('progressBar');
+    const inputStats = document.getElementById('inputStats');
+    const outputStats = document.getElementById('outputStats');
+    const chunkStats = document.getElementById('chunkStats');
+    const timeStats = document.getElementById('timeStats');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // State
+    let translationDirection = 'en-hi';
+    let startTime = 0;
+
+    // Event Listeners
+    enToHiTab.addEventListener('click', () => {
+      translationDirection = 'en-hi';
+      enToHiTab.classList.add('active');
+      hiToEnTab.classList.remove('active');
+    });
+
+    hiToEnTab.addEventListener('click', () => {
+      translationDirection = 'hi-en';
+      hiToEnTab.classList.add('active');
+      enToHiTab.classList.remove('active');
+    });
+
+    inputText.addEventListener('input', updateStats);
+
+    translateBtn.addEventListener('click', async () => {
+      if (!inputText.value.trim()) {
+        showError('Please enter some text to translate.');
+        return;
+      }
+
+      try {
+        startTime = Date.now();
+        translateBtn.disabled = true;
+        copyBtn.disabled = true; // Keep copy disabled until translation finishes
+        errorMsg.textContent = '';
+        errorMsg.style.color = 'var(--error-color)'; // Reset color in case it was warning
+        outputText.textContent = 'Translating...';
+        progressBar.style.width = '0%'; // Reset progress bar
+
+        const text = inputText.value;
+        const chunks = splitTextIntoChunks(text, MAX_CHUNK_SIZE); // Use updated splitting
+
+        updateStats();
+        chunkStats.textContent = `${chunks.length} chunks`;
+
+        let fullTranslation = '';
+        let failedChunks = 0;
+
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          let translatedChunk = '';
+          let retries = 0;
+          let success = false;
+
+          while (retries < MAX_RETRIES && !success) {
+            try {
+              translatedChunk = await translateChunk(chunk, translationDirection);
+              success = true;
+            } catch (error) {
+              retries++;
+              console.warn(`Chunk translation failed (attempt ${retries}/${MAX_RETRIES}):`, error);
+              if (retries >= MAX_RETRIES) {
+                translatedChunk = `\n\n[TRANSLATION FAILED FOR THIS PART]\n\n`; // Add line breaks for clarity
+                failedChunks++;
+              } else {
+                await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CHUNKS * 2));
+              }
+            }
+          }
+
+          // Append chunk with appropriate spacing (avoid double space if previous ended with space)
+          fullTranslation += (fullTranslation.endsWith(' ') || fullTranslation.endsWith('\n') || !fullTranslation ? '' : ' ') + translatedChunk;
+
+          const progress = ((i + 1) / chunks.length) * 100;
+          progressBar.style.width = `${progress}%`;
+          outputText.textContent = fullTranslation.trim(); // Trim potentially leading/trailing spaces
+          outputStats.textContent = `${outputText.textContent.length} characters`;
+          timeStats.textContent = `${Math.floor((Date.now() - startTime)/1000)}s`;
+
+          if (i < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CHUNKS));
+          }
+        }
+
+        if (failedChunks > 0) {
+          showError(`${failedChunks} out of ${chunks.length} chunks may have failed to translate. Check the output for [TRANSLATION FAILED] markers.`, false); // Use 'false' for warning style
+        } else {
+           showError(""); // Clear errors if successful
+        }
+
+        copyBtn.disabled = !outputText.textContent || outputText.textContent.includes('Translating...') || outputText.textContent.includes('Your complete translation'); // Enable copy only if there's valid content
+
+      } catch (error) {
+        showError(`Translation Error: ${error.message || 'Please try again later.'}`);
+        console.error('Translation error:', error);
+        outputText.textContent = 'Translation failed.'; // Update output on error
+      } finally {
+        translateBtn.disabled = false;
+      }
+    });
+
+    // --- MODIFIED COPY FUNCTION ---
+    copyBtn.addEventListener('click', () => {
+      const textToCopy = outputText.textContent;
+
+      if (!textToCopy || textToCopy.includes('Your complete translation') || textToCopy.includes('Translating...')) {
+        showError('No valid translation to copy');
+        return;
+      }
+
+      // --- Method 1: Modern Clipboard API (Preferred, needs secure context) ---
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => {
+            showCopySuccess();
+          })
+          .catch(err => {
+            console.warn('navigator.clipboard failed, trying fallback:', err);
+            // Attempt fallback if navigator.clipboard fails even in secure context
+            fallbackCopyTextToClipboard(textToCopy);
+          });
+      } else {
+        // --- Method 2: Fallback using document.execCommand (Less reliable, for non-secure contexts like file://) ---
+        console.warn('navigator.clipboard not available or context insecure, using fallback copy method.');
+        fallbackCopyTextToClipboard(textToCopy);
+      }
+    });
+
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+
+        // Make the textarea non-editable and invisible
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        textArea.style.left = '-9999px';
+        textArea.style.width = '2em'; /* Avoid scrolling */
+        textArea.style.height = '2em'; /* Avoid scrolling */
+        textArea.style.opacity = '0'; // Ensure it's invisible
+        textArea.setAttribute('readonly', ''); // Prevent keyboard popup on mobile
+
+        document.body.appendChild(textArea);
+        textArea.focus(); // Focus needed for execCommand
+        textArea.select(); // Select the text
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showCopySuccess();
+            } else {
+                console.error('Fallback copy command failed.');
+                showError('Failed to copy text using fallback method.');
+            }
+        } catch (err) {
+            console.error('Error during fallback copy:', err);
+            showError('Error occurred while trying to copy.');
+        }
+
+        document.body.removeChild(textArea); // Clean up the temporary textarea
+    }
+
+    function showCopySuccess() {
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.textContent = 'Copy';
+        }, 2000);
+        showError(''); // Clear any previous error message
+    }
+    // --- END OF MODIFIED COPY FUNCTION ---
+
+
+    // Helper Functions
+    function updateStats() {
+      const charCount = inputText.value.length;
+      inputStats.textContent = `${charCount} characters`;
+      // Estimate chunk count - update calculation slightly
+      if (!translateBtn.disabled) { // Only show estimate when not translating
+         const estimatedChunks = charCount > 0 ? Math.max(1, Math.ceil(charCount / MAX_CHUNK_SIZE)) : 0;
+         chunkStats.textContent = `${estimatedChunks} chunk${estimatedChunks !== 1 ? 's' : ''} (estimated)`;
+      }
+    }
+
+    function showError(message, isError = true) {
+        errorMsg.textContent = message;
+        // Use CSS variables for color and apply specific styling for warnings
+        if (message) { // Only apply styles if there is a message
+            if (isError) {
+                errorMsg.style.color = 'var(--error-color)';
+                // Ensure specific warning styles are removed if it's now an error
+                errorMsg.style.backgroundColor = '';
+                errorMsg.style.border = '';
+            } else {
+                errorMsg.style.color = 'var(--warning-color)';
+                // Apply warning styles directly (since we can't easily add/remove classes here)
+                errorMsg.style.backgroundColor = '#fef5e7';
+                errorMsg.style.border = '1px solid var(--warning-color)';
+            }
+        } else {
+             // Clear inline styles when message is empty
+             errorMsg.style.color = '';
+             errorMsg.style.backgroundColor = '';
+             errorMsg.style.border = '';
+        }
+    }
+
+
+    // Refined Text Splitting Function
+    function splitTextIntoChunks(text, maxChunkSize) {
+        const chunks = [];
+        let remainingText = text.trim(); // Start with trimmed text
+
+        if (remainingText.length === 0) return [];
+        if (remainingText.length <= maxChunkSize) return [remainingText];
+
+        while (remainingText.length > 0) {
+            if (remainingText.length <= maxChunkSize) {
+                chunks.push(remainingText);
+                break;
+            }
+
+            let chunk;
+            let splitIndex = -1; // Initialize splitIndex to -1
+
+             // 1. Try to split at the last paragraph break within the limit
+            let paraBreak = remainingText.lastIndexOf('\n\n', maxChunkSize);
+             if (paraBreak > 0) { // Ensure it's not at the very beginning
+                 splitIndex = paraBreak + 1; // Split *after* the first newline of the pair
+             }
+
+            // 2. If no paragraph break, try the last sentence break (.!?) followed by space/newline
+            if (splitIndex <= 0) {
+                 const sentenceEndRegex = /([.!?])(?:\s+|\n)/g;
+                 let lastMatchIndex = -1;
+                 let match;
+                 // Find the last match that ends within maxChunkSize
+                 while ((match = sentenceEndRegex.exec(remainingText)) !== null) {
+                     if (match.index + match[0].length -1 <= maxChunkSize) {
+                        lastMatchIndex = match.index + match[1].length; // Split after the punctuation
+                     } else {
+                         break; // Gone past the max size
+                     }
+                 }
+                  if (lastMatchIndex > 0) {
+                     splitIndex = lastMatchIndex;
+                  }
+            }
+
+            // 3. If no sentence break, try the last space
+            if (splitIndex <= 0) {
+                let spaceBreak = remainingText.lastIndexOf(' ', maxChunkSize);
+                 if (spaceBreak > 0) {
+                     splitIndex = spaceBreak; // Split at the space
+                 }
+            }
+
+            // 4. If still no suitable break point, force break at maxChunkSize
+            if (splitIndex <= 0) {
+                splitIndex = maxChunkSize;
+            }
+
+            chunk = remainingText.substring(0, splitIndex).trim();
+            if (chunk.length > 0) { // Avoid adding empty chunks
+               chunks.push(chunk);
+            }
+             // Move remainingText pointer past the split point and trim leading whitespace/newlines
+            remainingText = remainingText.substring(splitIndex).trimStart();
+        }
+
+        // Filter out any potentially empty chunks just in case
+        return chunks.filter(chunk => chunk.length > 0);
+    }
+
+
+    async function translateChunk(text, direction) {
+      const langpair = direction === 'en-hi' ? 'en|hi' : 'hi|en';
+      // Using a simple anonymous email for the API requirement
+      const email = "user@example.com";
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}&de=${email}`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+           // Handle non-2xx HTTP responses more gracefully
+           const errorData = await response.text(); // Try to get error text
+           console.error("MyMemory API HTTP Error:", response.status, errorData);
+           throw new Error(`API request failed (Status: ${response.status}). Check console for details.`);
+        }
+        const data = await response.json();
+
+        if (data.responseStatus !== 200 && data.responseStatus !== "200") {
+          // Handle API-specific errors (e.g., rate limits, invalid input)
+          console.error("MyMemory API Error:", data);
+          throw new Error(`API Error: ${data.responseDetails || 'Unknown API error'}`);
+        }
+
+        if (!data.responseData || data.responseData.translatedText === null || data.responseData.translatedText === undefined) {
+            // Handle cases where translation is missing even with 200 status
+            console.warn("API returned 200 but no translated text:", data);
+            // Check if match quality is very low, might indicate bad translation
+            if (data.responseData.match && data.responseData.match < 0.5) {
+                 console.warn("Translation quality is low, might be inaccurate.");
+            }
+            return `[NO TRANSLATION RETURNED for: ${text.substring(0,50)}...]`; // Return original text snippet or indicate failure
+        }
+
+        return data.responseData.translatedText;
+
+      } catch (networkError) {
+           // Handle fetch errors (network down, CORS issues if API changed, etc.)
+           console.error("Network or fetch error:", networkError);
+           // Rethrow with a user-friendly message
+           throw new Error(`Network error during translation. Please check your connection.`);
+      }
+    }
+
+    // Initial setup
+    updateStats(); // Update stats on load
+    copyBtn.disabled = true; // Ensure copy is disabled initially
+    outputText.textContent = 'Your complete translation will appear here...'; // Reset output text
+
+  </script>
+</body>
+</html>

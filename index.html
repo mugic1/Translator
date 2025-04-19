@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Complete Text Translator</title>
+  <!-- PWA Requirements -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#3498db">
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="logo.png">
   <style>
     /* --- CSS Variables for easy theming --- */
@@ -71,6 +75,32 @@
       color: var(--text-dark);
       margin-bottom: 30px; /* Increased margin */
       font-weight: 600;
+    }
+
+    /* --- Install Button Styles --- */
+    #installBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: var(--secondary-color);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: none; /* Hidden by default */
+      z-index: 1000;
+      font-weight: 500;
+    }
+    
+    #installBtn:hover {
+      background-color: var(--secondary-color-dark);
+      transform: translateY(-2px);
+    }
+    
+    #installBtn:active {
+      transform: translateY(0);
     }
 
     /* --- Language Tabs --- */
@@ -295,6 +325,13 @@
       .stats {
         font-size: 13px;
       }
+      
+      #installBtn {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        font-size: 14px;
+      }
     }
 
      /* Styles for screens smaller than 400px */
@@ -310,7 +347,6 @@
             margin-right: 5px;
          }
      }
-
   </style>
 </head>
 <body>
@@ -355,6 +391,9 @@
     <div id="errorMsg" class="error"></div>
   </div>
 
+  <!-- Install Button (will appear when PWA is installable) -->
+  <button id="installBtn">Install App</button>
+
   <script>
     // Configuration
     const MAX_CHUNK_SIZE = 1500;
@@ -374,10 +413,51 @@
     const chunkStats = document.getElementById('chunkStats');
     const timeStats = document.getElementById('timeStats');
     const errorMsg = document.getElementById('errorMsg');
+    const installBtn = document.getElementById('installBtn');
 
     // State
     let translationDirection = 'en-hi';
     let startTime = 0;
+    let deferredPrompt;
+
+    // PWA Installation Handling
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      // Show the install button
+      installBtn.style.display = 'block';
+      
+      installBtn.addEventListener('click', () => {
+        // Hide the install button
+        installBtn.style.display = 'none';
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted install');
+          } else {
+            console.log('User dismissed install');
+          }
+          deferredPrompt = null;
+        });
+      });
+    });
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
 
     // Event Listeners
     enToHiTab.addEventListener('click', () => {

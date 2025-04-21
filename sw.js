@@ -1,4 +1,4 @@
-const Complete Text Translator = 'translator-v1';
+const Translator = 'translator-v1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,7 +11,7 @@ const urlsToCache = [
 // Install
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(Complete Text Translator).then(cache => cache.addAll(urlsToCache))
+    caches.open(Translator).then(cache => cache.addAll(urlsToCache))
   );
 });
 
@@ -20,7 +20,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.map(key => {
-        if (key !== Complete Text Translator) return caches.delete(key);
+        if (key !== Translator) return caches.delete(key);
       }))
     )
   );
